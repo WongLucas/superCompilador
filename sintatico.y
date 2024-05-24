@@ -2,6 +2,8 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <list>
+#include <stack>
 
 #define YYSTYPE atributos
 
@@ -11,9 +13,29 @@ int var_temp_qnt;
 
 struct atributos
 {
+	string tipo;
 	string label;
 	string traducao;
 };
+
+struct simbolos
+{
+	string tipo;
+	string endereco;
+	string nome;
+};
+
+// Pilha de tabelas de símbolos
+stack<list<simbolos>> pilhaDeTabelas;
+
+// Funções de manipulação de pilha
+void entrarBloco();
+void sairBloco();
+bool declararVariavel(string tipo, string endereco, string nome);
+bool variavelDeclarada(string nome);
+string buscarEndereco(string nome);
+string listarSimbolosDoEscopoAtual();
+
 
 int yylex(void);
 void yyerror(string);
@@ -47,13 +69,23 @@ S 			: TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 			}
 			;
 
-BLOCO		: '{' COMANDOS '}'
+BLOCO		: IB COMANDOS '}'
 			{
-				$$.traducao = $2.traducao;
+				$$.traducao = listarSimbolosDoEscopoAtual() + $2.traducao;
+				sairBloco();
 			}
 			;
 
+IB			: '{'
+			{
+				entrarBloco();
+			}
+
 COMANDOS	: COMANDO COMANDOS
+			{
+				$$.traducao = $1.traducao + $2.traducao;
+			}
+			| BLOCO COMANDOS
 			{
 				$$.traducao = $1.traducao + $2.traducao;
 			}
@@ -66,6 +98,18 @@ COMANDOS	: COMANDO COMANDOS
 COMANDO 	: E ';'
 			{
 				$$ = $1;
+			}
+			| TIPO TK_ID ';'
+			{
+				if(!declararVariavel($1.tipo, gentempcode(), $2.label)){
+					yyerror("Variavel já declarada neste escopo");
+				}
+			}
+			;
+
+TIPO 		: TK_TIPO_INT
+			{
+				$$.tipo = "int"; 
 			}
 			;
 
@@ -117,10 +161,82 @@ string gentempcode()
 int main(int argc, char* argv[])
 {
 	var_temp_qnt = 0;
+	entrarBloco();
 
 	yyparse();
 
 	return 0;
+}
+
+void entrarBloco()
+{
+	pilhaDeTabelas.push(list<simbolos>());
+}
+
+void sairBloco()
+{
+	if (!pilhaDeTabelas.empty()) {
+        pilhaDeTabelas.pop();
+    } else {
+        yyerror("Erro: Tentativa de sair de um bloco vazio");
+    }
+}
+
+bool declararVariavel(string tipo, string endereco, string nome) {
+    if (!pilhaDeTabelas.empty()) {
+        list<simbolos>& topo = pilhaDeTabelas.top();
+        for (const auto& simbolos : topo) {
+            if (simbolos.nome == nome) {
+                return false;
+            }
+        }
+        topo.push_back({tipo, endereco, nome});
+        return true;
+    }
+    return false;
+}
+
+bool variavelDeclarada(const string& nome) {
+    stack<list<simbolos>> copiaPilha = pilhaDeTabelas;
+    while (!copiaPilha.empty()) {
+        const list<simbolos>& topo = copiaPilha.top();
+        for (const auto& simbolo : topo) {
+            if (simbolo.nome == nome) {
+                return true;
+            }
+        }
+        copiaPilha.pop();
+    }
+    return false;
+}
+
+string buscarEndereco(string nome) {
+    stack<list<simbolos>> copiaPilha = pilhaDeTabelas;
+    while (!copiaPilha.empty()) {
+        const list<simbolos>& topo = copiaPilha.top();
+        for (const auto& simbolo : topo) {
+            if (simbolo.nome == nome) {
+                return simbolo.endereco;
+            }
+        }
+        copiaPilha.pop();
+    }
+    return ""; // Retorna uma string vazia se a variável não for encontrada
+}
+
+string listarSimbolosDoEscopoAtual() {
+    if (pilhaDeTabelas.empty()) {
+        return "Nenhum símbolo no escopo atual.";
+    }
+
+    const list<simbolos>& topo = pilhaDeTabelas.top();
+    string resultado;
+
+    for (const auto& simbolo : topo) {
+        resultado += "\t" + simbolo.tipo + " " + simbolo.endereco + "; //" + simbolo.nome + "\n";
+    }
+
+    return resultado;
 }
 
 void yyerror(string MSG)
