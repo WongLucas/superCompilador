@@ -127,7 +127,12 @@ E 			: E '+' E
 			}
 			| TK_ID '=' E
 			{
-				$$.traducao = $1.traducao + $3.traducao + "\t" + $1.label + " = " + $3.label + ";\n";
+				if(variavelDeclarada($1.label)){
+					$$.traducao = $1.traducao + $3.traducao + "\t" + buscarEndereco($1.label) + " = " + $3.label + ";\n";
+				}else{
+					yyerror("Variavel '" + $1.label + "' nao declarada");
+				}
+
 			}
 			| TK_NUM
 			{
@@ -196,7 +201,7 @@ bool declararVariavel(string tipo, string endereco, string nome) {
     return false;
 }
 
-bool variavelDeclarada(const string& nome) {
+bool variavelDeclarada(string nome) {
     stack<list<simbolos>> copiaPilha = pilhaDeTabelas;
     while (!copiaPilha.empty()) {
         const list<simbolos>& topo = copiaPilha.top();
