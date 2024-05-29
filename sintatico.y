@@ -33,6 +33,7 @@ void entrarBloco();
 void sairBloco();
 bool declararVariavel(string tipo, string endereco, string nome);
 bool variavelDeclarada(string nome);
+void inserirSimboloTopo(string tipo, string endereco);
 string buscarEndereco(string nome);
 string listarSimbolosDoEscopoAtual();
 
@@ -137,6 +138,7 @@ E 			: E '+' E
 			| TK_NUM
 			{
 				$$.label = gentempcode();
+				inserirSimboloTopo("int", $$.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_ID
@@ -213,6 +215,14 @@ bool variavelDeclarada(string nome) {
         copiaPilha.pop();
     }
     return false;
+}
+
+void inserirSimboloTopo(string tipo, string endereco) {
+	if (!pilhaDeTabelas.empty()) {
+        pilhaDeTabelas.top().push_back({tipo, endereco, ""});
+    } else {
+        yyerror("Erro: Tentativa de inserir símbolo em uma pilha de tabelas vazia");
+    }
 }
 
 string buscarEndereco(string nome) {
