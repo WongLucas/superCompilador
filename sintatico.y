@@ -53,23 +53,41 @@ string gentempcode();
 
 %%
 
-S 			: TK_TIPO_INT TK_MAIN '(' ')' BLOCO
+S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 			{
 				string codigo = "/*Compilador FOCA*/\n"
 								"#include <iostream>\n"
 								"#include<string.h>\n"
-								"#include<stdio.h>\n"
-								"int main(void) {\n";
-								
-				codigo += $5.traducao;
-								
-				codigo += 	"\treturn 0;"
-							"\n}";
+								"#include<stdio.h>\n";
+
+				codigo += $1.traducao;
+				codigo += "int main(void) {\n";
+				codigo += $6.traducao;
+				codigo += "\treturn 0;\n"
+						"}\n";
 
 				cout << codigo << endl;
 			}
 			;
 
+DECLARACOES_GLOBAIS : DECLARACOES_GLOBAIS DECLARACAO_GLOBAL
+			{
+				$$.traducao = listarSimbolosDoEscopoAtual();
+			}
+			| 
+			{
+				$$.traducao = "";
+			}
+			;
+
+DECLARACAO_GLOBAL : TIPO TK_ID ';'
+			{
+				if (!declararVariavel($1.tipo, gentempcode(), $2.label)) {
+					yyerror("Variável global já declarada");
+				}
+			}
+			;
+			
 BLOCO		: IB COMANDOS '}'
 			{
 				$$.traducao = listarSimbolosDoEscopoAtual() + $2.traducao;
