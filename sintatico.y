@@ -157,7 +157,7 @@ TIPO 		: TK_TIPO_INT
 E 			: E '+' E
 			{
 				$$.label = gentempcode();
-				inserirSimboloEscopo("int", $$.label, "");
+				inserirSimboloEscopo("int", $$.label, $1.label + " + " + $3.label);
 				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
 					" = " + $1.label + " + " + $3.label + ";\n";
 			}
