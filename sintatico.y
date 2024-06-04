@@ -43,8 +43,9 @@ void yyerror(string);
 string gentempcode();
 %}
 
-%token TK_NUM
-%token TK_MAIN TK_ID TK_TIPO_INT
+%token TK_NUM TK_REAL TK_CHAR TK_BOOL
+%token TK_MAIN TK_ID
+%token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
 
 %start S
@@ -59,7 +60,9 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 								"#include <iostream>\n"
 								"#include<string.h>\n"
 								"#include<stdio.h>\n";
-
+								"#define true 1\n";								
+								"#define false 0\n";
+								
 				codigo += $1.traducao;
 				codigo += "int main(void) {\n";
 				codigo += $6.traducao;
@@ -118,7 +121,7 @@ COMANDO 	: E ';'
 			{
 				$$ = $1;
 			}
-			| TIPO TK_ID ';'
+			| TIPO TK_ID ';' //DECLARACAO
 			{
 				if(!declararVariavel($1.tipo, gentempcode(), $2.label)){
 					yyerror("Variavel já declarada neste escopo");
@@ -130,11 +133,24 @@ TIPO 		: TK_TIPO_INT
 			{
 				$$.tipo = "int"; 
 			}
+			| TK_TIPO_FLOAT
+			{
+				$$.tipo = "float"; 				
+			}
+			| TK_TIPO_CHAR
+			{
+				$$.tipo = "char"; 				
+			}
+			| TK_TIPO_BOOL
+			{
+				$$.tipo = "bool"; 				
+			}
 			;
 
 E 			: E '+' E
 			{
 				$$.label = gentempcode();
+				inserirSimboloTopo("int", $$.label);
 				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
 					" = " + $1.label + " + " + $3.label + ";\n";
 			}
@@ -161,8 +177,11 @@ E 			: E '+' E
 			}
 			| TK_ID
 			{
-				$$.label = gentempcode();
-				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
+				if(variavelDeclarada($1.label)){
+					$$.label = buscarEndereco($1.label);
+				}else{
+					yyerror("Variavel '" + $1.label + "' nao declarada");
+				}
 			}
 			| '(' E ')'
 			{
