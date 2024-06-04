@@ -33,7 +33,7 @@ void entrarBloco();
 void sairBloco();
 bool declararVariavel(string tipo, string endereco, string nome);
 bool variavelDeclarada(string nome);
-void inserirSimboloTopo(string tipo, string endereco);
+void inserirSimboloEscopo(string tipo, string endereco, string nome);
 string buscarEndereco(string nome);
 string listarSimbolosDoEscopoAtual();
 
@@ -121,11 +121,18 @@ COMANDO 	: E ';'
 			{
 				$$ = $1;
 			}
-			| TIPO TK_ID ';' //DECLARACAO
+			| DECLARACAO
 			{
-				if(!declararVariavel($1.tipo, gentempcode(), $2.label)){
+				if(!declararVariavel($1.tipo, gentempcode(), $1.label)){
 					yyerror("Variavel já declarada neste escopo");
 				}
+			}
+			;
+
+DECLARACAO	: TIPO TK_ID ';'
+			{
+				$$.tipo = $1.tipo;
+				$$.label = $2.label;
 			}
 			;
 
@@ -150,7 +157,7 @@ TIPO 		: TK_TIPO_INT
 E 			: E '+' E
 			{
 				$$.label = gentempcode();
-				inserirSimboloTopo("int", $$.label);
+				inserirSimboloEscopo("int", $$.label, "");
 				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
 					" = " + $1.label + " + " + $3.label + ";\n";
 			}
@@ -172,7 +179,25 @@ E 			: E '+' E
 			| TK_NUM
 			{
 				$$.label = gentempcode();
-				inserirSimboloTopo("int", $$.label);
+				inserirSimboloEscopo("int", $$.label, $1.label);
+				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
+			}
+			| TK_REAL
+			{
+				$$.label = gentempcode();
+				inserirSimboloEscopo("float", $$.label, $1.label);
+				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
+			}
+			| TK_CHAR
+			{
+				$$.label = gentempcode();
+				inserirSimboloEscopo("char", $$.label, $1.label);
+				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
+			}
+			| TK_BOOL
+			{
+				$$.label = gentempcode();
+				inserirSimboloEscopo("bool", $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_ID
@@ -254,9 +279,9 @@ bool variavelDeclarada(string nome) {
     return false;
 }
 
-void inserirSimboloTopo(string tipo, string endereco) {
+void inserirSimboloEscopo(string tipo, string endereco, string nome) {
 	if (!pilhaDeTabelas.empty()) {
-        pilhaDeTabelas.top().push_back({tipo, endereco, ""});
+        pilhaDeTabelas.top().push_back({tipo, endereco, nome});
     } else {
         yyerror("Erro: Tentativa de inserir símbolo em uma pilha de tabelas vazia");
     }

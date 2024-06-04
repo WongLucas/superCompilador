@@ -32,10 +32,10 @@ ID {LETRA}({LETRA}|{NUM})*
 
 "="		    { return '='; }
 
-{NUM}		{ yylval.label = yytext; yylval.tipo = "int"; return TK_NUM; }
-{REAL}		{ yylval.label = yytext; yylval.tipo = "float"; return TK_REAL; }
-{CHAR}		{ yylval.label = yytext; yylval.tipo = "char"; return TK_CHAR; }
-"true"|"false"  { yylval.label = yytext; yylval.tipo = "bool"; return TK_BOOL; }
+{NUM}		{ yylval.label = yytext; return TK_NUM; }
+{REAL}		{ yylval.label = yytext; return TK_REAL; }
+{CHAR}		{ yylval.label = yytext; return TK_CHAR; }
+"true"|"false"  { yylval.label = yytext; return TK_BOOL; }
 
 
 {ID}		{ yylval.label = yytext; return TK_ID; }
