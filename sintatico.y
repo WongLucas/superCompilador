@@ -37,6 +37,8 @@ void inserirSimboloEscopo(string tipo, string endereco, string nome);
 string buscarEndereco(string nome);
 string listarSimbolosDoEscopoAtual();
 
+// Funções de manipuação de operações
+void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado);
 
 int yylex(void);
 void yyerror(string);
@@ -59,8 +61,8 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 				string codigo = "/*Compilador FOCA*/\n"
 								"#include <iostream>\n"
 								"#include<string.h>\n"
-								"#include<stdio.h>\n";
-								"#define true 1\n";								
+								"#include<stdio.h>\n"
+								"#define true 1\n"							
 								"#define false 0\n";
 								
 				codigo += $1.traducao;
@@ -156,10 +158,11 @@ TIPO 		: TK_TIPO_INT
 
 E 			: E '+' E
 			{
-				$$.label = gentempcode();
+				/*$$.label = gentempcode();
 				inserirSimboloEscopo("int", $$.label, $1.label + " + " + $3.label);
 				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
-					" = " + $1.label + " + " + $3.label + ";\n";
+					" = " + $1.label + " + " + $3.label + ";\n";*/
+				resultadoEntreOperacao($1,"+",$3,$$);
 			}
 			| E '-' E
 			{
@@ -179,25 +182,29 @@ E 			: E '+' E
 			| TK_NUM
 			{
 				$$.label = gentempcode();
-				inserirSimboloEscopo("int", $$.label, $1.label);
+				$$.tipo = "int";
+				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_REAL
 			{
 				$$.label = gentempcode();
-				inserirSimboloEscopo("float", $$.label, $1.label);
+				$$.tipo = "float";
+				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_CHAR
 			{
 				$$.label = gentempcode();
-				inserirSimboloEscopo("char", $$.label, $1.label);
+				$$.tipo = "char";
+				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_BOOL
 			{
 				$$.label = gentempcode();
-				inserirSimboloEscopo("bool", $$.label, $1.label);
+				$$.tipo = "bool";
+				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
 			| TK_ID
@@ -314,6 +321,15 @@ string listarSimbolosDoEscopoAtual() {
     }
 
     return resultado;
+}
+
+void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado){
+	if(atributo1.tipo == atributo2.tipo){
+		resultado.label = gentempcode();
+		inserirSimboloEscopo(atributo1.tipo, resultado.label, atributo1.label + " " + operador + " " + atributo2.label);
+		resultado.traducao = atributo1.traducao + atributo2.traducao + "\t" + resultado.label + " = " +
+		atributo1.label + " " + operador + " " + atributo2.label;
+	}
 }
 
 void yyerror(string MSG)
