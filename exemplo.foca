@@ -1,4 +1,9 @@
+int a;
 int main()
 {
-	1+1;
+	a = 1;
+	{
+		int a;
+		a = 2;
+	}
 }
