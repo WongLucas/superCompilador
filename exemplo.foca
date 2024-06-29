@@ -1,3 +1,4 @@
 int main(){
-	1+2*3;
+	bool a;
+	a = 'c';
 }

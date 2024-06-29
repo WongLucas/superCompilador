@@ -169,20 +169,26 @@ E 			: E '+' E
 			}
 			| E '-' E
 			{
-				resultadoEntreOperacao($1,"+",$3,$$);
+				resultadoEntreOperacao($1,"-",$3,$$);
 			}
 			| E '*' E
 			{
-				resultadoEntreOperacao($1,"+",$3,$$);
+				resultadoEntreOperacao($1,"*",$3,$$);
 			}
 			| E '/' E
 			{
-				resultadoEntreOperacao($1,"+",$3,$$);
+				resultadoEntreOperacao($1,"/",$3,$$);
 			}
 			| TK_ID '=' E
 			{
 				if(variavelDeclarada($1.label)){
-					$$.traducao = $1.traducao + $3.traducao + "\t" + buscarEndereco($1.label) + " = " + $3.label + ";\n";
+					if(buscarTipo($1.label) == $3.tipo){
+						$$.traducao = $1.traducao + $3.traducao + "\t" + buscarEndereco($1.label) + " = " + $3.label + ";\n";
+					}else{
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += "\t" + buscarEndereco($1.label) + " = ";
+						$$.traducao += "(" + buscarTipo($1.label) + ")" + $3.label + ";\n";
+					}
 				}else{
 					yyerror("Variavel '" + $1.label + "' nao declarada");
 				}
@@ -370,7 +376,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo2.label);
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao + "\t" + resultado.label + " = " +
-		atributo1.label + " + " + atributo2.label + ";\n";
+		atributo1.label + operador + atributo2.label + ";\n";
 
 	}else if(atributo1.tipo == "float" && atributo2.tipo == "int"){ //FLOAT E INT
 		
@@ -382,7 +388,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 
 	}else if(atributo1.tipo == "float" && atributo2.tipo == "char"){ //FLOAT E CHAR
 		
@@ -394,7 +400,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "float" && atributo2.tipo == "bool"){ //FLOAT E BOOL
 		
@@ -406,7 +412,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "int" && atributo2.tipo == "float"){
 
@@ -418,7 +424,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
 
 }else if(atributo1.tipo == "int" && atributo2.tipo == "char"){		
 
@@ -430,7 +436,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "int" && atributo2.tipo == "bool"){		
 
@@ -442,7 +448,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "char" && atributo2.tipo == "float"){
 
@@ -454,7 +460,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
 
 	}else if(atributo1.tipo == "char" && atributo2.tipo == "int"){
 
@@ -466,7 +472,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "char" && atributo2.tipo == "bool"){
 		
@@ -478,7 +484,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "bool" && atributo2.tipo == "float"){
 		
@@ -490,7 +496,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "bool" && atributo2.tipo == "int"){
 		
@@ -502,7 +508,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}else if(atributo1.tipo == "bool" && atributo2.tipo == "char"){
 		
@@ -514,7 +520,7 @@ void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& at
 
 		resultado.traducao = atributo1.traducao + atributo2.traducao;
 		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
-		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + " + " + atributo3.endereco + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
 		
 	}
 }
