@@ -1,9 +1,2 @@
-int a;
-int main()
-{
-	a = 1;
-	{
-		int a;
-		a = 2;
-	}
+int main(){
 }
