@@ -1,4 +1,7 @@
 int main(){
-	bool a;
-	a = 'c';
+	int a;
+	int b;
+	a = scan();
+	b = 10;
+	print(false);
 }

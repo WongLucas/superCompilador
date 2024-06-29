@@ -1,6 +1,7 @@
 %{
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <list>
 #include <stack>
@@ -51,7 +52,7 @@ string gentempcode();
 %}
 
 %token TK_NUM TK_REAL TK_CHAR TK_BOOL
-%token TK_MAIN TK_ID
+%token TK_MAIN TK_ID TK_PRINT TK_SCAN
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
 
@@ -70,7 +71,8 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 								"#include<stdio.h>\n"
 								"#define bool int\n"
 								"#define true 1\n"							
-								"#define false 0\n";
+								"#define false 0\n"
+								"using namespace std;\n";
 								
 				codigo += $1.traducao;
 				codigo += "int main(void) {\n";
@@ -79,6 +81,11 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 						"}\n";
 
 				cout << codigo << endl;
+
+				ofstream f_out;
+				f_out.open("teste-compilador.cpp");
+				f_out << codigo;
+				f_out.close();
 			}
 			;
 
@@ -136,7 +143,29 @@ COMANDO 	: E ';'
 					yyerror("Variavel já declarada neste escopo");
 				}
 			}
+			| PRINT
+			{
+				$$ = $1;
+			}
+			| SCAN
+			{
+				$$ = $1;
+			}
 			;
+
+PRINT		: TK_PRINT '(' E ')' ';'
+			{
+				$$.traducao = $3.traducao + "\tcout << " + $3.label + " << endl;\n";
+			}
+
+SCAN		: TK_ID '=' TK_SCAN'(' ')' ';'
+			{
+				if(variavelDeclarada($1.label)){
+					$$.traducao = "\tcin >> " + buscarEndereco($1.label) + ";\n";
+				}else{
+					yyerror("Variavel '" + $1.label + "' nao declarada");
+				}
+			}
 
 DECLARACAO	: TIPO TK_ID ';'
 			{

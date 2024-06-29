@@ -26,6 +26,9 @@ ID {LETRA}({LETRA}|{NUM})*
 "char"		{return TK_TIPO_CHAR;}
 "bool"		{return TK_TIPO_BOOL;}
 
+"print"     {return TK_PRINT;}
+"scan"      {return TK_SCAN;}
+
 [(){}[\];,]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }
