@@ -31,14 +31,19 @@ stack<list<simbolos>> pilhaDeTabelas;
 // Funções de manipulação de pilha
 void entrarBloco();
 void sairBloco();
-bool declararVariavel(string tipo, string endereco, string nome);
-bool variavelDeclarada(string nome);
 void inserirSimboloEscopo(string tipo, string endereco, string nome);
-string buscarEndereco(string nome);
 string listarSimbolosDoEscopoAtual();
 
-// Funções de manipuação de operações
+// Funções de manipulação de variáveis
+bool declararVariavel(string tipo, string endereco, string nome);
+bool variavelDeclarada(string nome);
+struct simbolos variavelParaConversao(string tipo, string endereco, string nome);
+string buscarEndereco(string nome);
+string buscarTipo(string nome);
+
+// Funções de manipulação de operações
 void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado);
+string tipoResultante(string tipo1, string tipo2);
 
 int yylex(void);
 void yyerror(string);
@@ -52,7 +57,8 @@ string gentempcode();
 
 %start S
 
-%left '+'
+%left '+' '-'
+%left '*' '/'
 
 %%
 
@@ -62,6 +68,7 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 								"#include <iostream>\n"
 								"#include<string.h>\n"
 								"#include<stdio.h>\n"
+								"#define bool int\n"
 								"#define true 1\n"							
 								"#define false 0\n";
 								
@@ -158,22 +165,30 @@ TIPO 		: TK_TIPO_INT
 
 E 			: E '+' E
 			{
-				/*$$.label = gentempcode();
-				inserirSimboloEscopo("int", $$.label, $1.label + " + " + $3.label);
-				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
-					" = " + $1.label + " + " + $3.label + ";\n";*/
 				resultadoEntreOperacao($1,"+",$3,$$);
 			}
 			| E '-' E
 			{
-				$$.label = gentempcode();
-				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
-					" = " + $1.label + " - " + $3.label + ";\n";
+				resultadoEntreOperacao($1,"-",$3,$$);
+			}
+			| E '*' E
+			{
+				resultadoEntreOperacao($1,"*",$3,$$);
+			}
+			| E '/' E
+			{
+				resultadoEntreOperacao($1,"/",$3,$$);
 			}
 			| TK_ID '=' E
 			{
 				if(variavelDeclarada($1.label)){
-					$$.traducao = $1.traducao + $3.traducao + "\t" + buscarEndereco($1.label) + " = " + $3.label + ";\n";
+					if(buscarTipo($1.label) == $3.tipo){
+						$$.traducao = $1.traducao + $3.traducao + "\t" + buscarEndereco($1.label) + " = " + $3.label + ";\n";
+					}else{
+						$$.traducao = $1.traducao + $3.traducao;
+						$$.traducao += "\t" + buscarEndereco($1.label) + " = ";
+						$$.traducao += "(" + buscarTipo($1.label) + ")" + $3.label + ";\n";
+					}
 				}else{
 					yyerror("Variavel '" + $1.label + "' nao declarada");
 				}
@@ -207,10 +222,11 @@ E 			: E '+' E
 				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
 				$$.traducao = "\t" + $$.label + " = " + $1.label + ";\n";
 			}
-			| TK_ID
+			| TK_ID	//IMPLEMENTAR QUAL O TIPO AQUI!!!
 			{
 				if(variavelDeclarada($1.label)){
 					$$.label = buscarEndereco($1.label);
+					$$.tipo = buscarTipo($1.label);
 				}else{
 					yyerror("Variavel '" + $1.label + "' nao declarada");
 				}
@@ -294,6 +310,18 @@ void inserirSimboloEscopo(string tipo, string endereco, string nome) {
     }
 }
 
+struct simbolos variavelParaConversao(string tipo, string endereco, string nome){
+	struct simbolos variavel = {tipo, endereco, nome};
+	
+	if (!pilhaDeTabelas.empty()) {
+        pilhaDeTabelas.top().push_back({tipo, endereco, nome});
+    } else {
+        yyerror("Erro: Tentativa de inserir símbolo em uma pilha de tabelas vazia");
+    }
+
+	return variavel;
+}
+
 string buscarEndereco(string nome) {
     stack<list<simbolos>> copiaPilha = pilhaDeTabelas;
     while (!copiaPilha.empty()) {
@@ -301,6 +329,20 @@ string buscarEndereco(string nome) {
         for (const auto& simbolo : topo) {
             if (simbolo.nome == nome) {
                 return simbolo.endereco;
+            }
+        }
+        copiaPilha.pop();
+    }
+    return ""; // Retorna uma string vazia se a variável não for encontrada
+}
+
+string buscarTipo(string nome) {
+    stack<list<simbolos>> copiaPilha = pilhaDeTabelas;
+    while (!copiaPilha.empty()) {
+        const list<simbolos>& topo = copiaPilha.top();
+        for (const auto& simbolo : topo) {
+            if (simbolo.nome == nome) {
+                return simbolo.tipo;
             }
         }
         copiaPilha.pop();
@@ -324,12 +366,194 @@ string listarSimbolosDoEscopoAtual() {
 }
 
 void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado){
-	if(atributo1.tipo == atributo2.tipo){
+	string tipo_resultante = tipoResultante(atributo1.tipo, atributo2.tipo);
+
+	if(atributo1.tipo == atributo2.tipo){ //OPERANDOS DE MESMO TIPO
+
+		resultado.tipo = tipo_resultante;
 		resultado.label = gentempcode();
-		inserirSimboloEscopo(atributo1.tipo, resultado.label, atributo1.label + " " + operador + " " + atributo2.label);
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo2.label);
+
 		resultado.traducao = atributo1.traducao + atributo2.traducao + "\t" + resultado.label + " = " +
-		atributo1.label + " " + operador + " " + atributo2.label;
+		atributo1.label + operador + atributo2.label + ";\n";
+
+	}else if(atributo1.tipo == "float" && atributo2.tipo == "int"){ //FLOAT E INT
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+
+	}else if(atributo1.tipo == "float" && atributo2.tipo == "char"){ //FLOAT E CHAR
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "float" && atributo2.tipo == "bool"){ //FLOAT E BOOL
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "int" && atributo2.tipo == "float"){
+
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo1.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo2.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
+
+}else if(atributo1.tipo == "int" && atributo2.tipo == "char"){		
+
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "int " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "int" && atributo2.tipo == "bool"){		
+
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "int " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "char" && atributo2.tipo == "float"){
+
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo1.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo2.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
+
+	}else if(atributo1.tipo == "char" && atributo2.tipo == "int"){
+
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "int " + atributo1.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo2.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo1.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo2.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "char" && atributo2.tipo == "bool"){
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "char " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "bool" && atributo2.tipo == "float"){
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "float " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "bool" && atributo2.tipo == "int"){
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "int " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
+	}else if(atributo1.tipo == "bool" && atributo2.tipo == "char"){
+		
+		resultado.tipo = tipo_resultante;
+		struct simbolos atributo3 = variavelParaConversao(resultado.tipo, gentempcode(), "char " + atributo2.label);
+		resultado.label = gentempcode();
+
+		inserirSimboloEscopo(resultado.tipo, resultado.label, atributo1.label + operador + atributo3.endereco);
+
+		resultado.traducao = atributo1.traducao + atributo2.traducao;
+		resultado.traducao += "\t" + atributo3.endereco + " = " + "(" + tipo_resultante + ")" + atributo2.label + ";\n";
+		resultado.traducao += "\t" + resultado.label + " = " + atributo1.label + operador + atributo3.endereco + ";\n";
+		
 	}
+}
+
+string tipoResultante(string tipo1, string tipo2) {
+	if (tipo1 == tipo2) {
+		return tipo1;
+	} else if (tipo1 == "float" && tipo2 == "int"){
+		return "float";
+	} else if (tipo1 == "float" && tipo2 == "char") {
+		return "float";
+	} else if (tipo1 == "float" && tipo2 == "bool") {
+		return "float";
+	} else if (tipo1 == "int" && tipo2 == "float") {
+		return "float";
+	} else if (tipo1 == "int" && tipo2 == "char") {
+		return "int";
+	} else if (tipo1 == "int" && tipo2 == "bool") {
+		return "int";
+	} else if (tipo1 == "char" && tipo2 == "float") {
+		return "float";
+	} else if (tipo1 == "char" && tipo2 == "int") {
+		return "int";
+	} else if (tipo1 == "char" && tipo2 == "bool") {
+		return "char";
+	} else if (tipo1 == "bool" && tipo2 == "float") {
+		return "float";
+	} else if (tipo1 == "bool" && tipo2 == "int") {
+		return "int";
+	} else if (tipo1 == "bool" && tipo2 == "char") {
+		return "char";
+	}
+	return "";
 }
 
 void yyerror(string MSG)
