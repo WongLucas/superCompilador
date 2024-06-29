@@ -11,6 +11,7 @@
 using namespace std;
 
 int var_temp_qnt;
+int num_linha;
 
 struct atributos
 {

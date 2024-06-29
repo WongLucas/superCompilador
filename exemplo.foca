@@ -1,7 +1,11 @@
 int main(){
 	int a;
-	int b;
+	float b;
 	a = scan();
-	b = 10;
-	print(false);
+	b = 10.1;
+	print(a + b);
+
+	//asasljasj
+	/*saksyaslkasa
+	sasluajslasjas*/
 }
