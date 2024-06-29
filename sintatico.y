@@ -165,17 +165,19 @@ TIPO 		: TK_TIPO_INT
 
 E 			: E '+' E
 			{
-				/*$$.label = gentempcode();
-				inserirSimboloEscopo("int", $$.label, $1.label + " + " + $3.label);
-				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
-					" = " + $1.label + " + " + $3.label + ";\n";*/
 				resultadoEntreOperacao($1,"+",$3,$$);
 			}
 			| E '-' E
 			{
-				$$.label = gentempcode();
-				$$.traducao = $1.traducao + $3.traducao + "\t" + $$.label + 
-					" = " + $1.label + " - " + $3.label + ";\n";
+				resultadoEntreOperacao($1,"+",$3,$$);
+			}
+			| E '*' E
+			{
+				resultadoEntreOperacao($1,"+",$3,$$);
+			}
+			| E '/' E
+			{
+				resultadoEntreOperacao($1,"+",$3,$$);
 			}
 			| TK_ID '=' E
 			{
