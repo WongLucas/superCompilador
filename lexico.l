@@ -33,6 +33,9 @@ COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
 "print"     {return TK_PRINT;}
 "scan"      {return TK_SCAN;}
 
+"if"        {return TK_IF;}
+"else"      {return TK_ELSE;}
+
 [(){}[\];,]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }

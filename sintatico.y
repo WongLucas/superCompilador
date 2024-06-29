@@ -50,10 +50,16 @@ string tipoResultante(string tipo1, string tipo2);
 int yylex(void);
 void yyerror(string);
 string gentempcode();
+
+// Geração de labels para os desvios condicionais
+string genLabelElse();
+string genLabelFim();
+int qntLabelElse = 0;
+int qntLabelFim = 0;
 %}
 
 %token TK_NUM TK_REAL TK_CHAR TK_BOOL
-%token TK_MAIN TK_ID TK_PRINT TK_SCAN
+%token TK_MAIN TK_ID TK_PRINT TK_SCAN TK_IF TK_ELSE
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
 
@@ -61,6 +67,7 @@ string gentempcode();
 
 %left '+' '-'
 %left '*' '/'
+
 
 %%
 
@@ -152,12 +159,51 @@ COMANDO 	: E ';'
 			{
 				$$ = $1;
 			}
+			| TK_IF '(' E ')' BLOCO
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n" + 
+								$5.traducao + "\t" + label_fim + ":\n";
+			}
+			| TK_IF '(' E ')' BLOCO ELSES
+			{
+				string label_else = genLabelElse();
+				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_else + ";\n" + $5.traducao + 
+					"\tgoto FIM_" + to_string(qntLabelFim) + ";\n\t" + label_else + ":\n" + $6.traducao + "\n";
+			}
+			;
+
+ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
+			{
+				string label_else = genLabelElse();
+				$$.traducao = $4.traducao + "\t" "if(!" + $4.label + ") goto " + label_else + ";\n" + $6.traducao + 
+					"\tgoto FIM_" + to_string(qntLabelFim) + ";\n\t" + label_else + ":" + $7.traducao;
+			}
+			| TK_ELSE TK_IF '(' E ')' BLOCO	
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $4.traducao + "\t" "if(!" + $4.label + ") goto " + label_fim + ";\n" + 
+								$6.traducao + "\t" + label_fim + ":";
+			}
+			| ELSE
+			{
+				$$ = $1;
+			}
+			;
+			
+
+ELSE 		: TK_ELSE BLOCO
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $2.traducao + "\t" + label_fim + ":";
+			}
 			;
 
 PRINT		: TK_PRINT '(' E ')' ';'
 			{
 				$$.traducao = $3.traducao + "\tcout << " + $3.label + " << endl;\n";
 			}
+			;
 
 SCAN		: TK_ID '=' TK_SCAN'(' ')' ';'
 			{
@@ -167,6 +213,7 @@ SCAN		: TK_ID '=' TK_SCAN'(' ')' ';'
 					yyerror("Variavel '" + $1.label + "' nao declarada");
 				}
 			}
+			;
 
 DECLARACAO	: TIPO TK_ID ';'
 			{
@@ -278,6 +325,18 @@ string gentempcode()
 {
 	var_temp_qnt++;
 	return "t" + to_string(var_temp_qnt);
+}
+
+string genLabelFim()
+{
+	qntLabelFim++;
+	return "FIM_" + to_string(qntLabelFim);
+}
+
+string genLabelElse()
+{
+	qntLabelElse++;
+	return "ELSE_" + to_string(qntLabelElse);
 }
 
 int main(int argc, char* argv[])
@@ -588,6 +647,11 @@ string tipoResultante(string tipo1, string tipo2) {
 
 void yyerror(string MSG)
 {
+	ofstream f_out;
+	f_out.open("teste-compilador.cpp");
+	f_out << "int main(){return 0;}";
+	f_out.close();
+
 	cout << MSG << endl;
 	exit (0);
 }				
