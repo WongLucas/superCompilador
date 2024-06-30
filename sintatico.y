@@ -46,6 +46,7 @@ string buscarTipo(string nome);
 // Funções de manipulação de operações
 void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado);
 string tipoResultante(string tipo1, string tipo2);
+bool operacao_bool_valida(string op);
 
 int yylex(void);
 void yyerror(string);
@@ -64,12 +65,19 @@ int qntLabelWhile = 0;
 %token TK_MAIN TK_ID TK_PRINT TK_SCAN 
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
+%token MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL IGUAL NAO_IGUAL
+%token NAO AND OR
 %token TK_IF TK_ELSE TK_WHILE TK_DO
 
 %start S
 
+%left OR
+%left AND
+%left IGUAL NAO_IGUAL
+%left MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL 
 %left '+' '-'
 %left '*' '/'
+%left NAO
 
 
 %%
@@ -274,6 +282,10 @@ E 			: E '+' E
 			{
 				resultadoEntreOperacao($1,"/",$3,$$);
 			}
+			| OPERACAO_RELACIONAL
+			{
+				$$ = $1;
+			}
 			| TK_ID '=' E
 			{
 				if(variavelDeclarada($1.label)){
@@ -330,6 +342,39 @@ E 			: E '+' E
 			{
 				$$.label = $2.label;
 				$$.traducao = $2.traducao;
+			}
+			;
+
+OPERACAO_RELACIONAL:
+			E MAIOR E{
+				resultadoEntreOperacao($1,">",$3,$$);
+			}
+			| E MAIOR_IGUAL E{
+				resultadoEntreOperacao($1,">=",$3,$$);
+			}
+			| E MENOR E{
+				resultadoEntreOperacao($1,"<",$3,$$);
+			}
+			| E MENOR_IGUAL E{
+				resultadoEntreOperacao($1,"<=",$3,$$);
+			}
+			| E IGUAL E{
+				resultadoEntreOperacao($1,"==",$3,$$);
+			}
+			| E NAO_IGUAL E{
+				resultadoEntreOperacao($1,"!=",$3,$$);
+			}
+			| E AND E{
+				resultadoEntreOperacao($1,"&&",$3,$$);
+			}
+			| E OR E{
+				resultadoEntreOperacao($1,"||",$3,$$);
+			}
+			| NAO E{
+				$$.label = gentempcode();
+				$$.tipo = $2.tipo;
+				inserirSimboloEscopo($$.tipo, $$.label, "!" + $2.label);
+				$$.traducao += $2.traducao + "\t" + $$.label + " = !" + $2.label + ";\n";
 			}
 			;
 
@@ -478,8 +523,24 @@ string listarSimbolosDoEscopoAtual() {
     return resultado;
 }
 
+bool operacao_bool_valida(string op){
+	string operadores[4] = {"||", "&&" , "==", "!="};
+
+	if(op == "||" || op == "&&" || op == "==" || op == "!="){
+		return true;
+	}
+	return false;
+}
+
 void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado){
 	string tipo_resultante = tipoResultante(atributo1.tipo, atributo2.tipo);
+
+	if(atributo1.tipo != atributo2.tipo && (atributo1.tipo == "bool" || atributo2.tipo == "bool")){
+		yyerror("erro: tipos de operandos incompatíveis para o operador '" + operador + "'.");
+	}
+	else if(atributo1.tipo == "bool" && !operacao_bool_valida(operador)){
+		yyerror("erro: operador '" + operador + "' não definido para o tipo bool.");
+	}
 
 	if(atributo1.tipo == atributo2.tipo){ //OPERANDOS DE MESMO TIPO
 
