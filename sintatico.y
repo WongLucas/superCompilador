@@ -197,6 +197,15 @@ COMANDO 	: E ';'
 				$$.traducao += $2.traducao + $5.traducao + "\t" "if(" + $5.label + ") goto " + label_while + ";\n";
 				//$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
 			}
+			| TK_FOR'('E';'E';'E')' BLOCO
+			{
+				string label_fim = genLabelFim();
+				string label_while = genLabelWhile();
+				$$.traducao = $3.traducao + "\t" + label_while + ":\n";
+				$$.traducao += $5.traducao + "\t" "if(!" + $5.label + ") goto " + label_fim + ";\n" +
+								$9.traducao + $7.traducao;
+				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+			}
 			;
 
 ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
