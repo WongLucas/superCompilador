@@ -44,6 +44,17 @@ COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
 
 "="		    { return '='; }
 
+">"         { return MAIOR; }
+">="        { return MAIOR_IGUAL; }
+"<"         { return MENOR; }
+"<="        { return MENOR_IGUAL; }
+"=="        { return IGUAL; }
+"!="        { return NAO_IGUAL; }
+
+"!"        { return NAO; }
+"&&"        { return AND; }
+"||"        { return OR; }
+
 {NUM}		{ yylval.label = yytext; return TK_NUM; }
 {REAL}		{ yylval.label = yytext; return TK_REAL; }
 {CHAR}		{ yylval.label = yytext; return TK_CHAR; }
