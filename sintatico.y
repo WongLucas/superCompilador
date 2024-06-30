@@ -64,7 +64,7 @@ int qntLabelWhile = 0;
 %token TK_MAIN TK_ID TK_PRINT TK_SCAN 
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
-%token TK_IF TK_ELSE TK_WHILE TK_DO
+%token TK_IF TK_ELSE TK_WHILE TK_DO TK_FOR
 
 %start S
 
@@ -188,6 +188,15 @@ COMANDO 	: E ';'
 				$$.traducao = "\t" + label_while + ":\n";
 				$$.traducao += $2.traducao + $5.traducao + "\t" "if(" + $5.label + ") goto " + label_while + ";\n";
 				//$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+			}
+			| TK_FOR'('E';'E';'E')' BLOCO
+			{
+				string label_fim = genLabelFim();
+				string label_while = genLabelWhile();
+				$$.traducao = $3.traducao + "\t" + label_while + ":\n";
+				$$.traducao += $5.traducao + "\t" "if(!" + $5.label + ") goto " + label_fim + ";\n" +
+								$9.traducao + $7.traducao;
+				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
 			}
 			;
 
