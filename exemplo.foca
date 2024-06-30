@@ -1,4 +1,12 @@
 int main(){
-	bool a;
-	a = 'c';
+	int a;
+	a = 5;
+	while(a){
+		a = a - 1;
+		print(a);
+	}
+	do{
+		a = a + 1;
+		print('a');
+	}while(0);
 }

@@ -1,6 +1,7 @@
 %{
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <list>
 #include <stack>
@@ -10,6 +11,7 @@
 using namespace std;
 
 int var_temp_qnt;
+int num_linha;
 
 struct atributos
 {
@@ -48,17 +50,27 @@ string tipoResultante(string tipo1, string tipo2);
 int yylex(void);
 void yyerror(string);
 string gentempcode();
+
+// Geração de labels para os desvios condicionais
+string genLabelElse();
+string genLabelFim();
+string genLabelWhile();
+int qntLabelElse = 0;
+int qntLabelFim = 0;
+int qntLabelWhile = 0;
 %}
 
 %token TK_NUM TK_REAL TK_CHAR TK_BOOL
-%token TK_MAIN TK_ID
+%token TK_MAIN TK_ID TK_PRINT TK_SCAN 
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
+%token TK_IF TK_ELSE TK_WHILE TK_DO
 
 %start S
 
 %left '+' '-'
 %left '*' '/'
+
 
 %%
 
@@ -70,7 +82,8 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 								"#include<stdio.h>\n"
 								"#define bool int\n"
 								"#define true 1\n"							
-								"#define false 0\n";
+								"#define false 0\n"
+								"using namespace std;\n";
 								
 				codigo += $1.traducao;
 				codigo += "int main(void) {\n";
@@ -79,6 +92,11 @@ S : DECLARACOES_GLOBAIS TK_TIPO_INT TK_MAIN '(' ')' BLOCO
 						"}\n";
 
 				cout << codigo << endl;
+
+				ofstream f_out;
+				f_out.open("teste-compilador.cpp");
+				f_out << codigo;
+				f_out.close();
 			}
 			;
 
@@ -134,6 +152,83 @@ COMANDO 	: E ';'
 			{
 				if(!declararVariavel($1.tipo, gentempcode(), $1.label)){
 					yyerror("Variavel já declarada neste escopo");
+				}
+			}
+			| PRINT
+			{
+				$$ = $1;
+			}
+			| SCAN
+			{
+				$$ = $1;
+			}
+			| TK_IF '(' E ')' BLOCO
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n" + 
+								$5.traducao + "\t" + label_fim + ":\n";
+			}
+			| TK_IF '(' E ')' BLOCO ELSES
+			{
+				string label_else = genLabelElse();
+				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_else + ";\n" + $5.traducao + 
+					"\tgoto FIM_" + to_string(qntLabelFim) + ";\n\t" + label_else + ":\n" + $6.traducao + "\n";
+			}
+			| TK_WHILE '(' E ')' BLOCO
+			{
+				string label_fim = genLabelFim();
+				string label_while = genLabelWhile();
+				$$.traducao = "\t" + label_while + ":\n";
+				$$.traducao += $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n" + $5.traducao;
+				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+			}
+			| TK_DO BLOCO TK_WHILE '(' E ')' ';'
+			{
+				string label_while = genLabelWhile();
+				$$.traducao = "\t" + label_while + ":\n";
+				$$.traducao += $2.traducao + $5.traducao + "\t" "if(" + $5.label + ") goto " + label_while + ";\n";
+				//$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+			}
+			;
+
+ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
+			{
+				string label_else = genLabelElse();
+				$$.traducao = $4.traducao + "\t" "if(!" + $4.label + ") goto " + label_else + ";\n" + $6.traducao + 
+					"\tgoto FIM_" + to_string(qntLabelFim) + ";\n\t" + label_else + ":" + $7.traducao;
+			}
+			| TK_ELSE TK_IF '(' E ')' BLOCO	
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $4.traducao + "\t" "if(!" + $4.label + ") goto " + label_fim + ";\n" + 
+								$6.traducao + "\t" + label_fim + ":";
+			}
+			| ELSE
+			{
+				$$ = $1;
+			}
+			;
+			
+
+ELSE 		: TK_ELSE BLOCO
+			{
+				string label_fim = genLabelFim();
+				$$.traducao = $2.traducao + "\t" + label_fim + ":";
+			}
+			;
+
+PRINT		: TK_PRINT '(' E ')' ';'
+			{
+				$$.traducao = $3.traducao + "\tcout << " + $3.label + " << endl;\n";
+			}
+			;
+
+SCAN		: TK_ID '=' TK_SCAN'(' ')' ';'
+			{
+				if(variavelDeclarada($1.label)){
+					$$.traducao = "\tcin >> " + buscarEndereco($1.label) + ";\n";
+				}else{
+					yyerror("Variavel '" + $1.label + "' nao declarada");
 				}
 			}
 			;
@@ -248,6 +343,24 @@ string gentempcode()
 {
 	var_temp_qnt++;
 	return "t" + to_string(var_temp_qnt);
+}
+
+string genLabelFim()
+{
+	qntLabelFim++;
+	return "FIM_" + to_string(qntLabelFim);
+}
+
+string genLabelWhile()
+{
+	qntLabelWhile++;
+	return "WHILE_" + to_string(qntLabelWhile);
+}
+
+string genLabelElse()
+{
+	qntLabelElse++;
+	return "ELSE_" + to_string(qntLabelElse);
 }
 
 int main(int argc, char* argv[])
@@ -558,6 +671,11 @@ string tipoResultante(string tipo1, string tipo2) {
 
 void yyerror(string MSG)
 {
+	ofstream f_out;
+	f_out.open("teste-compilador.cpp");
+	f_out << "int main(){return 0;}";
+	f_out.close();
+
 	cout << MSG << endl;
 	exit (0);
 }				
