@@ -55,19 +55,24 @@ string gentempcode();
 // Geração de labels para os desvios condicionais
 string genLabelElse();
 string genLabelFim();
+string Ir_ProFimAnterior();
 string genLabelWhile();
+string Ir_ProWhileAnterior();
+int obter_qntWhile();
+int obter_qntFim();
 int qntLabelElse = 0;
 int qntLabelFim = 0;
 int qntLabelWhile = 0;
 %}
 
-%token TK_NUM TK_REAL TK_CHAR TK_BOOL
+%token TK_NUM TK_REAL TK_CHAR TK_BOOL 
 %token TK_MAIN TK_ID TK_PRINT TK_SCAN 
 %token TK_TIPO_INT TK_TIPO_FLOAT TK_TIPO_CHAR TK_TIPO_BOOL
 %token TK_FIM TK_ERROR
 %token MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL IGUAL NAO_IGUAL
 %token NAO AND OR
 %token TK_IF TK_ELSE TK_WHILE TK_DO TK_FOR
+%token TK_BREAK
 
 %start S
 
@@ -205,6 +210,14 @@ COMANDO 	: E ';'
 				$$.traducao += $5.traducao + "\t" "if(!" + $5.label + ") goto " + label_fim + ";\n" +
 								$9.traducao + $7.traducao;
 				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+			}
+			| TK_BREAK ';'
+			{
+				int qntWhile = obter_qntWhile();
+				int qntFim = obter_qntFim();
+				$$.traducao = "\tgoto FIM_" + to_string(qntFim) + "; \n"; 
+				string label_fim = Ir_ProFimAnterior();
+				string label_while = Ir_ProWhileAnterior();
 			}
 			;
 
@@ -399,15 +412,36 @@ string gentempcode()
 	return "t" + to_string(var_temp_qnt);
 }
 
+int obter_qntWhile()
+{
+	return qntLabelWhile;
+}
+
+int obter_qntFim()
+{
+	return qntLabelFim;
+}
 string genLabelFim()
 {
 	qntLabelFim++;
 	return "FIM_" + to_string(qntLabelFim);
 }
 
+string Ir_ProFimAnterior()
+{
+	qntLabelFim--;
+	return "FIM_" + to_string(qntLabelFim);
+}
+
 string genLabelWhile()
 {
 	qntLabelWhile++;
+	return "WHILE_" + to_string(qntLabelWhile);
+}
+
+string Ir_ProWhileAnterior()
+{
+	qntLabelWhile--;
 	return "WHILE_" + to_string(qntLabelWhile);
 }
 
