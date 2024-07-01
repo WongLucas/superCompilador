@@ -15,18 +15,18 @@ int main(void) {
 	int t6; //t1+t5
 	t2 = 0;
 	t1 = t2;
-	WHILE_0:
+	WHILE_1:
 	t3 = 10;
 	t4 = t1<t3;
-	if(!t4) goto FIM_0;
+	if(!t4) goto FIM_1;
 	int t7; //t1==t1
 	t7 = t1==t1;
 	cout << t7 << endl;
-	goto FIM_0; 
+	0
 	t5 = 1;
 	t6 = t1+t5;
 	t1 = t6;
-	goto WHILE_0;
-	FIM_0:
+	goto WHILE_1;
+	FIM_1:
 	return 0;
 }

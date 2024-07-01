@@ -12,6 +12,7 @@ using namespace std;
 
 int var_temp_qnt;
 int num_linha;
+int lacosAtivo = 0;
 
 struct atributos
 {
@@ -202,7 +203,7 @@ COMANDO 	: E ';'
 				$$.traducao += $2.traducao + $5.traducao + "\t" "if(" + $5.label + ") goto " + label_while + ";\n";
 				//$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
 			}
-			| TK_FOR'('E';'E';'E')' BLOCO
+			| FOR '('E';'E';'E')' BLOCO
 			{
 				string label_fim = genLabelFim();
 				string label_while = genLabelWhile();
@@ -210,9 +211,12 @@ COMANDO 	: E ';'
 				$$.traducao += $5.traducao + "\t" "if(!" + $5.label + ") goto " + label_fim + ";\n" +
 								$9.traducao + $7.traducao;
 				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+				lacosAtivo--;
 			}
 			| TK_BREAK ';'
 			{
+				if(!lacosAtivo)
+					yyerror("BURRO\n");
 				int qntWhile = obter_qntWhile();
 				int qntFim = obter_qntFim();
 				$$.traducao = "\tgoto FIM_" + to_string(qntFim) + "; \n"; 
@@ -220,6 +224,11 @@ COMANDO 	: E ';'
 				string label_while = Ir_ProWhileAnterior();
 			}
 			;
+
+FOR 		: TK_FOR
+			{
+				lacosAtivo++;
+			}
 
 ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
 			{
