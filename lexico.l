@@ -14,6 +14,7 @@ REAL {NUM}+("."{NUM}+)?
 CHAR \'({LETRA}|{NUM})\'
 ID {LETRA}({LETRA}|{NUM})*
 COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
+STRING \"([^\\\"]|\\.)*\"
 
 %%
 
@@ -58,6 +59,8 @@ COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
 {NUM}		{ yylval.label = yytext; return TK_NUM; }
 {REAL}		{ yylval.label = yytext; return TK_REAL; }
 {CHAR}		{ yylval.label = yytext; return TK_CHAR; }
+{STRING}    { yylval.label = yytext; return TK_STRING; }
+
 "true"|"false"  { yylval.label = yytext; return TK_BOOL; }
 
 

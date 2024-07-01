@@ -5,14 +5,16 @@
 #include <sstream>
 #include <list>
 #include <stack>
+#include <string.h>
 
 #define YYSTYPE atributos
 
 using namespace std;
 
 int var_temp_qnt;
+int var_temp_str_qnt;
 int num_linha;
-
+string tam_str;
 struct atributos
 {
 	string tipo;
@@ -42,7 +44,6 @@ bool variavelDeclarada(string nome);
 struct simbolos variavelParaConversao(string tipo, string endereco, string nome);
 string buscarEndereco(string nome);
 string buscarTipo(string nome);
-
 // Funções de manipulação de operações
 void resultadoEntreOperacao(atributos& atributo1, string operador, atributos& atributo2, atributos& resultado);
 string tipoResultante(string tipo1, string tipo2);
@@ -51,6 +52,7 @@ bool operacao_bool_valida(string op);
 int yylex(void);
 void yyerror(string);
 string gentempcode();
+string gentempcodestr();
 
 // Geração de labels para os desvios condicionais
 string genLabelElse();
@@ -68,6 +70,8 @@ int qntLabelWhile = 0;
 %token MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL IGUAL NAO_IGUAL
 %token NAO AND OR
 %token TK_IF TK_ELSE TK_WHILE TK_DO
+%token TK_STRING
+
 
 %start S
 
@@ -246,6 +250,12 @@ DECLARACAO	: TIPO TK_ID ';'
 				$$.tipo = $1.tipo;
 				$$.label = $2.label;
 			}
+			| TIPO TK_ID '['TK_NUM']'';'
+			{
+				$$.tipo = "char";
+				$$.label = $2.label;
+				tam_str = $4.label;
+			}
 			;
 
 TIPO 		: TK_TIPO_INT
@@ -343,6 +353,14 @@ E 			: E '+' E
 				$$.label = $2.label;
 				$$.traducao = $2.traducao;
 			}
+			| TK_STRING
+			 {
+				$$.label = gentempcodestr();
+				char *str_copy = (char *)malloc(100 * sizeof(char));
+				$$.tipo = "char";
+				inserirSimboloEscopo($$.tipo, $$.label, $1.label);
+        		$$.traducao = "\t" + $$.label + "[" + tam_str + "]" " = " + $1.label + ";\n";  
+			 }
 			;
 
 OPERACAO_RELACIONAL:
@@ -388,6 +406,11 @@ string gentempcode()
 {
 	var_temp_qnt++;
 	return "t" + to_string(var_temp_qnt);
+}
+string gentempcodestr()
+{
+	var_temp_str_qnt++;
+	return "str" + to_string(var_temp_str_qnt);
 }
 
 string genLabelFim()
