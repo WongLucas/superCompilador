@@ -38,6 +38,7 @@ COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
 "while"     {return TK_WHILE;}
 "do"        {return TK_DO;}
 "for"        {return TK_FOR;}
+"break"     {return TK_BREAK;}
 
 [(){}[\];,]	{ return *yytext; }
 
