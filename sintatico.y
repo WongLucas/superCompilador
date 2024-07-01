@@ -56,9 +56,7 @@ string gentempcode();
 // Geração de labels para os desvios condicionais
 string genLabelElse();
 string genLabelFim();
-string Ir_ProFimAnterior();
 string genLabelWhile();
-string Ir_ProWhileAnterior();
 int obter_qntWhile();
 int obter_qntFim();
 int qntLabelElse = 0;
@@ -73,7 +71,7 @@ int qntLabelWhile = 0;
 %token MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL IGUAL NAO_IGUAL
 %token NAO AND OR
 %token TK_IF TK_ELSE TK_WHILE TK_DO TK_FOR
-%token TK_BREAK
+%token TK_BREAK 
 
 %start S
 
@@ -216,12 +214,9 @@ COMANDO 	: E ';'
 			| TK_BREAK ';'
 			{
 				if(!lacosAtivo)
-					yyerror("BURRO\n");
-				int qntWhile = obter_qntWhile();
-				int qntFim = obter_qntFim();
+					yyerror("Não tem laco\n");
+				int qntFim = obter_qntFim() + 1;
 				$$.traducao = "\tgoto FIM_" + to_string(qntFim) + "; \n"; 
-				string label_fim = Ir_ProFimAnterior();
-				string label_while = Ir_ProWhileAnterior();
 			}
 			;
 
