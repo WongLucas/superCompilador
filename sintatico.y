@@ -57,11 +57,13 @@ string gentempcode();
 string genLabelElse();
 string genLabelFim();
 string genLabelWhile();
+string genLabelFim_If();
 int obter_qntWhile();
 int obter_qntFim();
 int qntLabelElse = 0;
 int qntLabelFim = 0;
 int qntLabelWhile = 0;
+int qntLabelFim_If = 0;
 %}
 
 %token TK_NUM TK_REAL TK_CHAR TK_BOOL 
@@ -176,7 +178,7 @@ COMANDO 	: E ';'
 			}
 			| TK_IF '(' E ')' BLOCO
 			{
-				string label_fim = genLabelFim();
+				string label_fim = genLabelFim_If();
 				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n" + 
 								$5.traducao + "\t" + label_fim + ":\n";
 			}
@@ -215,7 +217,7 @@ COMANDO 	: E ';'
 			{
 				if(!lacosAtivo)
 					yyerror("Não tem laco\n");
-				int qntFim = obter_qntFim() + 1;
+				int qntFim = obter_qntFim();
 				$$.traducao = "\tgoto FIM_" + to_string(qntFim) + "; \n"; 
 			}
 			;
@@ -223,6 +225,7 @@ COMANDO 	: E ';'
 FOR 		: TK_FOR
 			{
 				lacosAtivo++;
+				qntLabelFim++;
 			}
 
 ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
@@ -233,7 +236,7 @@ ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES
 			}
 			| TK_ELSE TK_IF '(' E ')' BLOCO	
 			{
-				string label_fim = genLabelFim();
+				string label_fim = genLabelFim_If();
 				$$.traducao = $4.traducao + "\t" "if(!" + $4.label + ") goto " + label_fim + ";\n" + 
 								$6.traducao + "\t" + label_fim + ":";
 			}
@@ -427,8 +430,12 @@ int obter_qntFim()
 }
 string genLabelFim()
 {
-	qntLabelFim++;
 	return "FIM_" + to_string(qntLabelFim);
+}
+string genLabelFim_If()
+{
+	qntLabelFim_If++;
+	return "FIM_IF_" + to_string(qntLabelFim_If);
 }
 
 string Ir_ProFimAnterior()

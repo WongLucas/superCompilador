@@ -8,48 +8,30 @@
 using namespace std;
 int main(void) {
 	int t1; //i
-	int t2; //j
-	int t3; //a
-	int t4; //0
-	int t5; //0
-	int t6; //10
-	int t7; //t1<t6
-	int t8; //1
-	int t9; //t1+t8
-	t4 = 0;
-	t3 = t4;
-	t5 = 0;
-	t1 = t5;
+	int t2; //0
+	int t3; //10
+	int t4; //t1<t3
+	int t5; //1
+	int t6; //t1+t5
+	t2 = 0;
+	t1 = t2;
 	WHILE_1:
-	t6 = 10;
-	t7 = t1<t6;
-	if(!t7) goto FIM_1;
-	int t10; //t1==t1
-	int t11; //0
-	int t12; //10
-	int t13; //t2<t12
-	int t14; //1
-	int t15; //t2+t14
-	t10 = t1==t1;
-	cout << t10 << endl;
-	t11 = 0;
-	t2 = t11;
-	WHILE_0:
-	t12 = 10;
-	t13 = t2<t12;
-	if(!t13) goto FIM_0;
-	int t16; //t2==t2
-	t16 = t2==t2;
-	cout << t16 << endl;
-	goto FIM_0; 
-	t14 = 1;
-	t15 = t2+t14;
-	t2 = t15;
-	goto WHILE_0;
-	FIM_0:
-	t8 = 1;
-	t9 = t1+t8;
-	t1 = t9;
+	t3 = 10;
+	t4 = t1<t3;
+	if(!t4) goto FIM_1;
+	int t7; //4
+	int t8; //t1==t7
+	int t9; //t1==t1
+	t7 = 4;
+	t8 = t1==t7;
+	if(!t8) goto FIM_IF_1;
+	goto FIM_1; 
+	FIM_IF_1:
+	t9 = t1==t1;
+	cout << t9 << endl;
+	t5 = 1;
+	t6 = t1+t5;
+	t1 = t6;
 	goto WHILE_1;
 	FIM_1:
 	return 0;
