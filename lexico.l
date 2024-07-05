@@ -39,7 +39,7 @@ COMENT ("//"(.*))|("/\*"(.|{FIM_LINHA})*"*/")
 "do"        {return TK_DO;}
 "for"        {return TK_FOR;}
 "break"     {return TK_BREAK;}
-
+"continue"  {return TK_CONTINUE;}
 [(){}[\];,]	{ return *yytext; }
 
 [+\-*/]		{ return *yytext; }
