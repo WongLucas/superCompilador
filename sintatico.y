@@ -73,7 +73,7 @@ int qntLabelFim_If = 0;
 %token MAIOR MAIOR_IGUAL MENOR MENOR_IGUAL IGUAL NAO_IGUAL
 %token NAO AND OR
 %token TK_IF TK_ELSE TK_WHILE TK_DO TK_FOR
-%token TK_BREAK 
+%token TK_BREAK TK_CONTINUE
 
 %start S
 
@@ -209,7 +209,8 @@ COMANDO 	: E ';'
 				string label_while = genLabelWhile();
 				$$.traducao = $3.traducao + "\t" + label_while + ":\n";
 				$$.traducao += $5.traducao + "\t" "if(!" + $5.label + ") goto " + label_fim + ";\n" +
-								$9.traducao + $7.traducao;
+								$9.traducao; 
+				$$.traducao += "\tCONTINUA_" + label_while + ":\n" + $7.traducao;
 				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
 				lacosAtivo--;
 			}
@@ -220,12 +221,20 @@ COMANDO 	: E ';'
 				int qntFim = obter_qntFim();
 				$$.traducao = "\tgoto FIM_" + to_string(qntFim) + "; \n"; 
 			}
+			| TK_CONTINUE ';'
+			{
+				if (!lacosAtivo)
+					yyerror("Não tem laco\n");
+				int qntWhile = obter_qntWhile();
+				$$.traducao = "\tgoto CONTINUA_WHILE_" + to_string(qntWhile) + "; \n";
+			}
 			;
 
 FOR 		: TK_FOR
 			{
 				lacosAtivo++;
 				qntLabelFim++;
+				qntLabelWhile++;
 			}
 
 ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
@@ -446,7 +455,6 @@ string Ir_ProFimAnterior()
 
 string genLabelWhile()
 {
-	qntLabelWhile++;
 	return "WHILE_" + to_string(qntLabelWhile);
 }
 
