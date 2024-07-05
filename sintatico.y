@@ -188,20 +188,25 @@ COMANDO 	: E ';'
 				$$.traducao = $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_else + ";\n" + $5.traducao + 
 					"\tgoto FIM_" + to_string(qntLabelFim) + ";\n\t" + label_else + ":\n" + $6.traducao + "\n";
 			}
-			| TK_WHILE '(' E ')' BLOCO
+			| WHILE '(' E ')' BLOCO
 			{
 				string label_fim = genLabelFim();
-				string label_while = genLabelWhile();
-				$$.traducao = "\t" + label_while + ":\n";
-				$$.traducao += $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n" + $5.traducao;
-				$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+    			string label_while = genLabelWhile();
+    			string label_continua = "CONTINUA_" + label_while;
+    			$$.traducao = "\t" + label_while + ":\n";
+    			$$.traducao += $3.traducao + "\t" "if(!" + $3.label + ") goto " + label_fim + ";\n";
+    			$$.traducao += $5.traducao;
+    			$$.traducao += "\t" + label_continua + ":\n";
+    			$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+    			lacosAtivo--;
 			}
-			| TK_DO BLOCO TK_WHILE '(' E ')' ';'
+			| TK_DO BLOCO WHILE '(' E ')' ';'
 			{
 				string label_while = genLabelWhile();
 				$$.traducao = "\t" + label_while + ":\n";
 				$$.traducao += $2.traducao + $5.traducao + "\t" "if(" + $5.label + ") goto " + label_while + ";\n";
 				//$$.traducao += "\tgoto " + label_while + ";\n\t" + label_fim + ":\n";
+				lacosAtivo--;
 			}
 			| FOR '('E';'E';'E')' BLOCO
 			{
@@ -236,6 +241,14 @@ FOR 		: TK_FOR
 				qntLabelFim++;
 				qntLabelWhile++;
 			}
+			;
+WHILE       : TK_WHILE
+			{
+				lacosAtivo++;
+				qntLabelFim++;
+				qntLabelWhile++;
+			}
+			;
 
 ELSES		: TK_ELSE TK_IF '(' E ')' BLOCO ELSES	
 			{
