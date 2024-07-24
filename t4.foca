@@ -1,0 +1,6 @@
+int a;
+float b;
+int main(){
+	a = 2.4;
+	b = 1;
+}

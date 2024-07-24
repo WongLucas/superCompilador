@@ -1,0 +1,5 @@
+int main(){
+	bool a;
+	a = 10<6;
+	print(a);
+}
